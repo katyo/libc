@@ -267,7 +267,7 @@ cfg_if! {
         }
         impl Eq for epoll_event {}
         impl ::fmt::Debug for epoll_event {
-            fn fmt(&self, f: &mut ::fmt::Formatter) -> ::fmt::Result {
+            fn fmt(&self, f: &mut ::fmt::Formatter<'_>) -> ::fmt::Result {
                 let events = self.events;
                 let u64 = self.u64;
                 f.debug_struct("epoll_event")
@@ -297,7 +297,7 @@ cfg_if! {
         }
         impl Eq for sockaddr_un {}
         impl ::fmt::Debug for sockaddr_un {
-            fn fmt(&self, f: &mut ::fmt::Formatter) -> ::fmt::Result {
+            fn fmt(&self, f: &mut ::fmt::Formatter<'_>) -> ::fmt::Result {
                 f.debug_struct("sockaddr_un")
                     .field("sun_family", &self.sun_family)
                 // FIXME: .field("sun_path", &self.sun_path)
@@ -325,7 +325,7 @@ cfg_if! {
         impl Eq for sockaddr_storage {}
 
         impl ::fmt::Debug for sockaddr_storage {
-            fn fmt(&self, f: &mut ::fmt::Formatter) -> ::fmt::Result {
+            fn fmt(&self, f: &mut ::fmt::Formatter<'_>) -> ::fmt::Result {
                 f.debug_struct("sockaddr_storage")
                     .field("ss_family", &self.ss_family)
                     .field("__ss_align", &self.__ss_align)
@@ -378,7 +378,7 @@ cfg_if! {
         impl Eq for utsname {}
 
         impl ::fmt::Debug for utsname {
-            fn fmt(&self, f: &mut ::fmt::Formatter) -> ::fmt::Result {
+            fn fmt(&self, f: &mut ::fmt::Formatter<'_>) -> ::fmt::Result {
                 f.debug_struct("utsname")
                 // FIXME: .field("sysname", &self.sysname)
                 // FIXME: .field("nodename", &self.nodename)
@@ -412,7 +412,7 @@ cfg_if! {
         }
         impl Eq for sigevent {}
         impl ::fmt::Debug for sigevent {
-            fn fmt(&self, f: &mut ::fmt::Formatter) -> ::fmt::Result {
+            fn fmt(&self, f: &mut ::fmt::Formatter<'_>) -> ::fmt::Result {
                 f.debug_struct("sigevent")
                     .field("sigev_value", &self.sigev_value)
                     .field("sigev_signo", &self.sigev_signo)
@@ -1549,15 +1549,17 @@ const_fn! {
 
 f! {
     pub fn CMSG_FIRSTHDR(mhdr: *const msghdr) -> *mut cmsghdr {
-        if (*mhdr).msg_controllen as usize >= ::mem::size_of::<cmsghdr>() {
-            (*mhdr).msg_control as *mut cmsghdr
-        } else {
-            0 as *mut cmsghdr
+        unsafe {
+            if (*mhdr).msg_controllen as usize >= ::mem::size_of::<cmsghdr>() {
+                (*mhdr).msg_control as *mut cmsghdr
+            } else {
+                0 as *mut cmsghdr
+            }
         }
     }
 
     pub fn CMSG_DATA(cmsg: *const cmsghdr) -> *mut ::c_uchar {
-        cmsg.offset(1) as *mut ::c_uchar
+        unsafe { cmsg.offset(1) as *mut ::c_uchar }
     }
 
     pub {const} fn CMSG_SPACE(length: ::c_uint) -> ::c_uint {
@@ -1571,26 +1573,30 @@ f! {
 
     pub fn FD_CLR(fd: ::c_int, set: *mut fd_set) -> () {
         let fd = fd as usize;
-        let size = ::mem::size_of_val(&(*set).fds_bits[0]) * 8;
-        (*set).fds_bits[fd / size] &= !(1 << (fd % size));
-        return
+        unsafe {
+            let size = ::mem::size_of_val(&(*set).fds_bits[0]) * 8;
+            (*set).fds_bits[fd / size] &= !(1 << (fd % size));
+        }
     }
 
     pub fn FD_ISSET(fd: ::c_int, set: *const fd_set) -> bool {
         let fd = fd as usize;
-        let size = ::mem::size_of_val(&(*set).fds_bits[0]) * 8;
-        return ((*set).fds_bits[fd / size] & (1 << (fd % size))) != 0
+        unsafe {
+            let size = ::mem::size_of_val(&(*set).fds_bits[0]) * 8;
+            return ((*set).fds_bits[fd / size] & (1 << (fd % size))) != 0
+        }
     }
 
     pub fn FD_SET(fd: ::c_int, set: *mut fd_set) -> () {
         let fd = fd as usize;
-        let size = ::mem::size_of_val(&(*set).fds_bits[0]) * 8;
-        (*set).fds_bits[fd / size] |= 1 << (fd % size);
-        return
+        unsafe {
+            let size = ::mem::size_of_val(&(*set).fds_bits[0]) * 8;
+            (*set).fds_bits[fd / size] |= 1 << (fd % size);
+        }
     }
 
     pub fn FD_ZERO(set: *mut fd_set) -> () {
-        for slot in (*set).fds_bits.iter_mut() {
+        for slot in unsafe { (*set).fds_bits.iter_mut() } {
             *slot = 0;
         }
     }

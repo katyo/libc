@@ -514,7 +514,7 @@ impl siginfo_t {
             _si_code: ::c_int,
             si_addr: *mut ::c_void,
         }
-        (*(self as *const siginfo_t as *const siginfo_sigfault)).si_addr
+        unsafe { (*(self as *const siginfo_t as *const siginfo_sigfault)).si_addr }
     }
 
     pub unsafe fn si_value(&self) -> ::sigval {
@@ -527,7 +527,7 @@ impl siginfo_t {
             _si_overrun: ::c_int,
             si_sigval: ::sigval,
         }
-        (*(self as *const siginfo_t as *const siginfo_timer)).si_sigval
+        unsafe { (*(self as *const siginfo_t as *const siginfo_timer)).si_sigval }
     }
 }
 
@@ -567,27 +567,27 @@ cfg_if! {
 
         impl siginfo_t {
             unsafe fn sifields(&self) -> &sifields {
-                &(*(self as *const siginfo_t as *const siginfo_f)).sifields
+                unsafe { &(*(self as *const siginfo_t as *const siginfo_f)).sifields }
             }
 
             pub unsafe fn si_pid(&self) -> ::pid_t {
-                self.sifields().sigchld.si_pid
+                unsafe { self.sifields().sigchld.si_pid }
             }
 
             pub unsafe fn si_uid(&self) -> ::uid_t {
-                self.sifields().sigchld.si_uid
+                unsafe { self.sifields().sigchld.si_uid }
             }
 
             pub unsafe fn si_status(&self) -> ::c_int {
-                self.sifields().sigchld.si_status
+                unsafe { self.sifields().sigchld.si_status }
             }
 
             pub unsafe fn si_utime(&self) -> ::c_long {
-                self.sifields().sigchld.si_utime
+                unsafe { self.sifields().sigchld.si_utime }
             }
 
             pub unsafe fn si_stime(&self) -> ::c_long {
-                self.sifields().sigchld.si_stime
+                unsafe { self.sifields().sigchld.si_stime }
             }
         }
 
@@ -676,7 +676,7 @@ cfg_if! {
         impl Eq for utmpx {}
 
         impl ::fmt::Debug for utmpx {
-            fn fmt(&self, f: &mut ::fmt::Formatter) -> ::fmt::Result {
+            fn fmt(&self, f: &mut ::fmt::Formatter<'_>) -> ::fmt::Result {
                 f.debug_struct("utmpx")
                     .field("ut_type", &self.ut_type)
                     .field("ut_pid", &self.ut_pid)
@@ -725,7 +725,7 @@ cfg_if! {
 
         #[cfg(libc_union)]
         impl ::fmt::Debug for __c_anonymous_ptrace_syscall_info_data {
-            fn fmt(&self, f: &mut ::fmt::Formatter) -> ::fmt::Result {
+            fn fmt(&self, f: &mut ::fmt::Formatter<'_>) -> ::fmt::Result {
                 unsafe {
                 f.debug_struct("__c_anonymous_ptrace_syscall_info_data")
                     .field("entry", &self.entry)
